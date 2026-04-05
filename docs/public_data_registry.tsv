@@ -1,0 +1,13 @@
+step	dataset	accession	modality	role	public_url
+cohort_integration	Ma et al. HCC scRNA	GSE149614	scRNA-seq	discovery cohort for malignant and immune transcriptional states	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE149614
+cohort_integration	Sun et al. HCC scRNA	GSE151530	scRNA-seq	independent cohort validation for GRN robustness	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE151530
+cohort_integration	Ma et al. early HCC	GSE125449	scRNA-seq	early lesion and trajectory validation	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE125449
+immune_validation	Zhang et al. HCC TME	GSE156625	scRNA-seq	immune compartment validation and immunotype analyses	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE156625
+spatial_mapping	Chen et al. HCC Visium	GSE203612	spatial transcriptomics	spatial regulon localization and niche calling	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE203612
+chromatin_support	Zhang et al. HCC ATAC	GSE182613	ATAC-seq	motif and enhancer support for TF-target edges	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE182613
+clinical_validation	TCGA Liver Hepatocellular Carcinoma	TCGA-LIHC	bulk RNA-seq + clinical	survival, stage, mutation, and purity associations	https://portal.gdc.cancer.gov/projects/TCGA-LIHC
+motif_priors	JASPAR 2024 CORE	JASPAR2024	motif database	TF motif priors for regulon support	https://jaspar.elixir.no/download/data/2024/CORE/
+motif_priors	HOCOMOCO v11	HOCOMOCOv11	motif database	orthogonal motif support	https://hocomoco11.autosome.org/downloads_v11
+binding_support	ENCODE TF ChIP-seq	ENCODE	ChIP-seq metadata	orthogonal TF binding evidence and liver-relevant track discovery	https://www.encodeproject.org/
+binding_support	CistromeDB human cancer	CistromeDB	ChIP-seq metadata	cancer-context TF binding support	http://cistrome.org/db/
+cell_annotation	Human Liver Cell Atlas	CZ CELLxGENE	single-cell reference	reference annotations for hepatocyte, immune, stromal, and endothelial states	https://cellxgene.cziscience.com/

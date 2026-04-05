@@ -1,74 +1,161 @@
 #!/usr/bin/env python3
-"""
-Spatial GRN Atlas of HCC — Data Acquisition
-Downloads scRNA-seq, scATAC-seq, and Visium datasets for GRN inference.
-"""
+"""Download public datasets required for the spatial GRN atlas workflow."""
 
+from __future__ import annotations
+
+import argparse
+import json
+import logging
 import subprocess
 from pathlib import Path
+from typing import Iterable
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
+LOG_DIR = PROJECT_ROOT / "logs"
 
-DATASETS = {
-    "scrna": [
-        {"geo": "GSE149614", "study": "Sharma2020_HCC", "type": "scRNA-seq"},
-        {"geo": "GSE151530", "study": "Sun2021_HCC", "type": "scRNA-seq"},
-        {"geo": "GSE189903", "study": "Lu2022_multiregion", "type": "scRNA-seq"},
-    ],
-    "scatac": [
-        # HCC multiome / scATAC datasets
-        {"geo": "GSE243xxx", "study": "HCC_multiome", "type": "10x Multiome",
-         "note": "Search GEO for recent HCC ATAC-seq datasets"},
-    ],
-    "visium": [
-        # Use existing HCC_omics Visium data
-        {"source": "local", "path": "~/projects/HCC_omics/data/spatial_transcriptome",
-         "study": "HCC_omics_cohort", "type": "Visium"},
-    ],
-    "references": [
-        {"name": "JASPAR2024", "url": "https://jaspar.elixir.no/download/data/2024/CORE/JASPAR2024_CORE_vertebrates_non-redundant_pfms_jaspar.txt"},
-        {"name": "ENCODE_TF_ChIP", "url": "https://www.encodeproject.org/"},
-    ]
-}
+DATASETS = [
+    {
+        "name": "Ma2020_HCC_scRNA",
+        "group": "scrna",
+        "accession": "GSE149614",
+        "source": "geo",
+        "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE149nnn/GSE149614/suppl/",
+    },
+    {
+        "name": "Sun2021_HCC_scRNA",
+        "group": "scrna",
+        "accession": "GSE151530",
+        "source": "geo",
+        "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE151nnn/GSE151530/suppl/",
+    },
+    {
+        "name": "Ma2019_Early_HCC_scRNA",
+        "group": "scrna",
+        "accession": "GSE125449",
+        "source": "geo",
+        "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE125nnn/GSE125449/suppl/",
+    },
+    {
+        "name": "Zhang2021_HCC_TME_scRNA",
+        "group": "scrna",
+        "accession": "GSE156625",
+        "source": "geo",
+        "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE156nnn/GSE156625/suppl/",
+    },
+    {
+        "name": "Chen2022_HCC_Visium",
+        "group": "spatial",
+        "accession": "GSE203612",
+        "source": "geo",
+        "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE203nnn/GSE203612/suppl/",
+    },
+    {
+        "name": "Zhang2022_HCC_ATAC",
+        "group": "atac",
+        "accession": "GSE182613",
+        "source": "geo",
+        "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE182nnn/GSE182613/suppl/",
+    },
+    {
+        "name": "TCGA_LIHC",
+        "group": "tcga",
+        "accession": "TCGA-LIHC",
+        "source": "portal",
+        "url": "https://portal.gdc.cancer.gov/projects/TCGA-LIHC",
+    },
+]
 
 
-def download_geo(geo_id: str, output_dir: Path):
-    """Download from GEO."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    if any(output_dir.iterdir()):
-        print(f"  [SKIP] {geo_id}")
+def setup_logging() -> logging.Logger:
+    LOG_DIR.mkdir(exist_ok=True)
+    logger = logging.getLogger("download_datasets")
+    logger.setLevel(logging.INFO)
+    if logger.handlers:
+        return logger
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    file_handler = logging.FileHandler(LOG_DIR / "download_datasets.log")
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+    return logger
+
+
+def run_command(command: list[str], dry_run: bool, logger: logging.Logger) -> None:
+    logger.info("CMD %s", " ".join(command))
+    if dry_run:
         return
-
-    ftp = f"https://ftp.ncbi.nlm.nih.gov/geo/series/{geo_id[:-3]}nnn/{geo_id}/suppl/"
-    subprocess.run([
-        "wget", "-r", "-np", "-nd", "-P", str(output_dir),
-        "-A", "*.tar.gz,*.h5,*.h5ad,*.csv.gz,*.tsv.gz,*.mtx.gz",
-        "--timeout=300", "--tries=3", ftp
-    ], capture_output=True, timeout=600)
+    subprocess.run(command, check=True)
 
 
-def main():
-    print("=" * 70)
-    print("Spatial GRN Atlas — Data Acquisition")
-    print("=" * 70)
+def iter_datasets(groups: set[str]) -> Iterable[dict]:
+    for dataset in DATASETS:
+        if not groups or dataset["group"] in groups:
+            yield dataset
 
-    for data_type, datasets in DATASETS.items():
-        print(f"\n[{data_type.upper()}]")
-        for ds in datasets:
-            if ds.get("geo"):
-                geo = ds["geo"]
-                ds_dir = DATA_DIR / data_type / f"{geo}_{ds['study']}"
-                if "xxx" not in geo:
-                    download_geo(geo, ds_dir)
-                else:
-                    print(f"  [TODO] Search GEO for: {ds.get('note', ds['study'])}")
-            elif ds.get("source") == "local":
-                print(f"  [LOCAL] Will symlink from {ds['path']}")
-            else:
-                print(f"  [MANUAL] {ds['name']}: {ds.get('url', 'N/A')}")
 
-    print("\n[DONE] Data acquisition complete.")
+def download_geo_dataset(dataset: dict, dry_run: bool, overwrite: bool, logger: logging.Logger) -> None:
+    output_dir = DATA_DIR / dataset["group"] / f"{dataset['accession']}_{dataset['name']}"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if not overwrite and any(output_dir.iterdir()):
+        logger.info("Skipping populated dataset directory: %s", output_dir)
+        return
+    command = [
+        "wget",
+        "-r",
+        "-np",
+        "-nd",
+        "-N",
+        "-P",
+        str(output_dir),
+        "-A",
+        "*.gz,*.tar,*.tar.gz,*.h5,*.h5ad,*.tsv,*.csv,*.mtx",
+        dataset["url"],
+    ]
+    run_command(command, dry_run, logger)
+
+
+def write_manifest(selected: list[dict], manifest_path: Path, logger: logging.Logger) -> None:
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(selected, indent=2), encoding="utf-8")
+    logger.info("Wrote manifest to %s", manifest_path)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--groups",
+        nargs="*",
+        default=[],
+        choices=sorted({dataset["group"] for dataset in DATASETS}),
+        help="Subset of dataset groups to download.",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Print actions only.")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite populated directories.")
+    parser.add_argument(
+        "--manifest-out",
+        type=Path,
+        default=PROJECT_ROOT / "docs" / "download_manifest.json",
+        help="Where to write the selected dataset manifest.",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    logger = setup_logging()
+    groups = set(args.groups)
+    if not groups:
+        logger.info("No groups specified; selecting all dataset groups.")
+    selected = list(iter_datasets(groups))
+    for dataset in selected:
+        if dataset["source"] == "geo":
+            download_geo_dataset(dataset, args.dry_run, args.overwrite, logger)
+        else:
+            logger.info("Manual/API dataset: %s -> %s", dataset["accession"], dataset["url"])
+    write_manifest(selected, args.manifest_out, logger)
 
 
 if __name__ == "__main__":

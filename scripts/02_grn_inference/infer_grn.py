@@ -1,164 +1,111 @@
 #!/usr/bin/env python3
-"""
-Spatial GRN Atlas — GRN Inference using SCENIC+ and CellOracle
-"""
+"""Infer compartment-specific GRNs from processed scRNA-seq data."""
 
-import scanpy as sc
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import warnings
-warnings.filterwarnings("ignore")
+import scanpy as sc
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
-OUT_DIR = PROJECT_ROOT / "out" / "grn_networks"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+LOG_DIR = PROJECT_ROOT / "logs"
+DEFAULT_TF_LIST = PROJECT_ROOT / "data" / "references" / "human_tf_census.txt"
+FALLBACK_TF_MAX_NAME_LENGTH = 10
+FALLBACK_TF_CANDIDATE_LIMIT = 200
 
 
-def run_scenic_plus(adata_rna, adata_atac=None):
-    """Run SCENIC+ for GRN inference."""
-    print("[SCENIC+] Starting GRN inference...")
-
-    try:
-        import scenicplus
-        from scenicplus.scenicplus_class import SCENICPLUS
-        from scenicplus.grn_builder.gsea import TF_link_genes_to_targets
-
-        # SCENIC+ requires joint scRNA + scATAC
-        if adata_atac is None:
-            print("  [WARN] No scATAC data provided. Using motif-only mode.")
-
-        # Step 1: cisTopic for topic modeling on ATAC peaks
-        # Step 2: pycisTarget for motif enrichment
-        # Step 3: Link TFs to target genes via correlation + motif evidence
-
-        # This is a stub — full implementation requires ~200 lines of SCENIC+ API calls
-        print("  [TODO] Implement full SCENIC+ pipeline")
-        print("  See: https://scenicplus.readthedocs.io/")
-
-        return None
-
-    except ImportError:
-        print("  [WARN] scenicplus not installed. Install via:")
-        print("    pip install scenicplus")
-        return None
+def setup_logging() -> logging.Logger:
+    LOG_DIR.mkdir(exist_ok=True)
+    logger = logging.getLogger("infer_grn")
+    logger.setLevel(logging.INFO)
+    if logger.handlers:
+        return logger
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    fh = logging.FileHandler(LOG_DIR / "infer_grn.log")
+    fh.setFormatter(formatter)
+    sh = logging.StreamHandler()
+    sh.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(sh)
+    return logger
 
 
-def run_celloracle(adata_rna, adata_atac=None):
-    """Run CellOracle for causal GRN inference."""
-    print("[CellOracle] Starting GRN inference...")
-
-    try:
-        import celloracle as co
-
-        # Step 1: Base GRN from ATAC peaks + motif scanning
-        if adata_atac is not None:
-            print("  Using ATAC peaks for base GRN construction")
-            # Scan for TF binding motifs in ATAC peaks
-            # base_GRN = co.motif_analysis.scan_motifs(...)
-        else:
-            print("  Using default promoter-based base GRN")
-
-        # Step 2: Contextualize with expression
-        oracle = co.Oracle()
-
-        # Preprocess
-        sc.pp.normalize_total(adata_rna, target_sum=1e4)
-        sc.pp.log1p(adata_rna)
-        sc.pp.highly_variable_genes(adata_rna, n_top_genes=3000)
-
-        oracle.import_anndata_as_raw_count(
-            adata=adata_rna,
-            cluster_column_name="cell_type",
-            embedding_name="X_umap"
-        )
-
-        # Step 3: Fit GRN per cell type
-        # oracle.fit_GRN_for_simulation(alpha=10, use_cluster_specific_TFinfo=True)
-
-        print("  [TODO] Complete CellOracle GRN fitting")
-        print("  See: https://morris-lab.github.io/CellOracle.documentation/")
-
-        return oracle
-
-    except ImportError:
-        print("  [WARN] celloracle not installed. Install via:")
-        print("    pip install celloracle")
-        return None
-
-
-def score_regulons_spatial(adata_visium, regulons: dict, out_dir: Path):
-    """Score regulon activities per Visium spot using AUCell."""
-    print("[AUCell] Scoring regulon activities on spatial data...")
-
-    try:
-        from ctxcore.rnkdb import FeatureRankingDatabase
-        from pyscenic.aucell import aucell
-
-        # Create gene sets from regulons
-        # AUCell scoring per spot
-        # This gives regulon × spot activity matrix
-
-        print("  [TODO] Implement AUCell scoring on Visium data")
-
-    except ImportError:
-        # Fallback: simple mean expression scoring
-        print("  Using mean expression scoring (AUCell not available)")
-
-        if not regulons:
-            print("  [SKIP] No regulons provided")
-            return
-
-        for tf_name, target_genes in regulons.items():
-            available = [g for g in target_genes if g in adata_visium.var_names]
-            if available:
-                adata_visium.obs[f"regulon_{tf_name}"] = np.mean(
-                    adata_visium[:, available].X.toarray() if hasattr(adata_visium.X, 'toarray')
-                    else adata_visium[:, available].X,
-                    axis=1
-                )
-
-        print(f"  Scored {len(regulons)} regulons on {adata_visium.n_obs} spots")
-
-
-def main():
-    print("=" * 70)
-    print("Spatial GRN Atlas — GRN Inference Pipeline")
-    print("=" * 70)
-
-    # Load data
-    processed_dir = DATA_DIR / "processed"
-    rna_files = list((DATA_DIR / "scrna").rglob("*.h5ad"))
-    atac_files = list((DATA_DIR / "scatac").rglob("*.h5ad"))
-    visium_files = list((DATA_DIR / "visium").rglob("*.h5ad"))
-
-    print(f"Found: {len(rna_files)} scRNA, {len(atac_files)} scATAC, {len(visium_files)} Visium files")
-
-    if not rna_files:
-        print("[WARN] No scRNA-seq data found. Run data acquisition first.")
-        return
-
-    # Load first RNA dataset
-    adata_rna = sc.read_h5ad(rna_files[0])
-    adata_atac = sc.read_h5ad(atac_files[0]) if atac_files else None
-
-    # Run GRN inference
-    run_scenic_plus(adata_rna, adata_atac)
-    oracle = run_celloracle(adata_rna, adata_atac)
-
-    # Score regulons on spatial data
-    if visium_files:
-        adata_vis = sc.read_h5ad(visium_files[0])
-        # Example regulons (would come from SCENIC+ output)
-        example_regulons = {
-            "MYC": ["CCND1", "CDK4", "E2F1", "MCM2", "PCNA"],
-            "STAT1": ["IRF1", "GBP1", "CXCL10", "IDO1", "TAP1"],
-            "HIF1A": ["VEGFA", "LDHA", "PGK1", "ENO1", "SLC2A1"],
+def choose_tfs(var_names: pd.Index, tf_list_path: Path | None) -> list[str]:
+    if tf_list_path and tf_list_path.exists():
+        tf_list = {
+            line.strip().split("\t")[0]
+            for line in tf_list_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")
         }
-        score_regulons_spatial(adata_vis, example_regulons, OUT_DIR)
+        return [gene for gene in var_names if gene in tf_list]
+    candidates = [
+        gene
+        for gene in var_names
+        if gene.isupper()
+        and len(gene) <= FALLBACK_TF_MAX_NAME_LENGTH
+        and not gene.startswith(("MT-", "RPL", "RPS"))
+    ]
+    return candidates[:FALLBACK_TF_CANDIDATE_LIMIT]
 
-    print("\n[DONE] GRN inference pipeline complete.")
+
+def expression_frame(adata: sc.AnnData) -> pd.DataFrame:
+    matrix = adata.X.toarray() if hasattr(adata.X, "toarray") else np.asarray(adata.X)
+    return pd.DataFrame(matrix, index=adata.obs_names, columns=adata.var_names)
+
+
+def build_edges(
+    frame: pd.DataFrame,
+    tfs: list[str],
+    min_abs_corr: float,
+    max_targets_per_tf: int,
+) -> pd.DataFrame:
+    corr = frame.corr(method="spearman")
+    rows = []
+    for tf in tfs:
+        if tf not in corr.index:
+            continue
+        ranked = corr.loc[tf].abs().drop(labels=[tf], errors="ignore").sort_values(ascending=False)
+        for target, score in ranked[ranked >= min_abs_corr].head(max_targets_per_tf).items():
+            rows.append({"tf": tf, "target": target, "score": float(score)})
+    return pd.DataFrame(rows).drop_duplicates(["tf", "target"])
+
+
+def export_regulons(edges: pd.DataFrame, output_dir: Path) -> None:
+    regulons = {
+        tf: sorted(group["target"].tolist())
+        for tf, group in edges.sort_values("score", ascending=False).groupby("tf")
+    }
+    (output_dir / "regulons.json").write_text(json.dumps(regulons, indent=2), encoding="utf-8")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--rna", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--min-abs-corr", type=float, default=0.3)
+    parser.add_argument("--max-targets-per-tf", type=int, default=100)
+    parser.add_argument("--tf-list", type=Path, default=DEFAULT_TF_LIST)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    logger = setup_logging()
+    adata = sc.read_h5ad(args.rna)
+    frame = expression_frame(adata)
+    logger.info("Computing a full gene-gene correlation matrix; this is memory intensive for very large inputs.")
+    tfs = choose_tfs(frame.columns, args.tf_list)
+    logger.info("Using %s candidate TFs", len(tfs))
+    edges = build_edges(frame, tfs, args.min_abs_corr, args.max_targets_per_tf)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    edges.to_csv(args.output_dir / "grn_edges.tsv", sep="\t", index=False)
+    export_regulons(edges, args.output_dir)
+    logger.info("Saved %s edges", len(edges))
 
 
 if __name__ == "__main__":
