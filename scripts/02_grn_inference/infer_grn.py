@@ -15,6 +15,8 @@ import scanpy as sc
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_DIR = PROJECT_ROOT / "logs"
 DEFAULT_TF_LIST = PROJECT_ROOT / "data" / "references" / "human_tf_census.txt"
+FALLBACK_TF_MAX_NAME_LENGTH = 10
+FALLBACK_TF_CANDIDATE_LIMIT = 200
 
 
 def setup_logging() -> logging.Logger:
@@ -44,9 +46,11 @@ def choose_tfs(var_names: pd.Index, tf_list_path: Path | None) -> list[str]:
     candidates = [
         gene
         for gene in var_names
-        if gene.isupper() and len(gene) <= 10 and not gene.startswith(("MT-", "RPL", "RPS"))
+        if gene.isupper()
+        and len(gene) <= FALLBACK_TF_MAX_NAME_LENGTH
+        and not gene.startswith(("MT-", "RPL", "RPS"))
     ]
-    return candidates[:200]
+    return candidates[:FALLBACK_TF_CANDIDATE_LIMIT]
 
 
 def expression_frame(adata: sc.AnnData) -> pd.DataFrame:
@@ -94,6 +98,7 @@ def main() -> None:
     logger = setup_logging()
     adata = sc.read_h5ad(args.rna)
     frame = expression_frame(adata)
+    logger.info("Computing a full gene-gene correlation matrix; this is memory intensive for very large inputs.")
     tfs = choose_tfs(frame.columns, args.tf_list)
     logger.info("Using %s candidate TFs", len(tfs))
     edges = build_edges(frame, tfs, args.min_abs_corr, args.max_targets_per_tf)

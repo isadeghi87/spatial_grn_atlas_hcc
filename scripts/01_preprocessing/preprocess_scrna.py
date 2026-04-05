@@ -75,7 +75,7 @@ def annotate_simple_celltypes(adata: ad.AnnData) -> None:
     best_idx = np.argmax(score_frame, axis=1)
     best_score = score_frame[np.arange(score_frame.shape[0]), best_idx]
     adata.obs["cell_type"] = [
-        labels[idx] if score > 0 else "Unassigned" for idx, score in zip(best_idx, best_score, strict=False)
+        labels[idx] if score > 0 else "Unassigned" for idx, score in zip(best_idx, best_score)
     ]
     adata.obs["cell_type_score"] = best_score
 
