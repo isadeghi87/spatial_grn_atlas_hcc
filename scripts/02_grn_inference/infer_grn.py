@@ -14,6 +14,7 @@ import scanpy as sc
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_DIR = PROJECT_ROOT / "logs"
+DEFAULT_TF_LIST = PROJECT_ROOT / "data" / "references" / "human_tf_census.txt"
 
 
 def setup_logging() -> logging.Logger:
@@ -32,13 +33,20 @@ def setup_logging() -> logging.Logger:
     return logger
 
 
-def choose_tfs(var_names: pd.Index) -> list[str]:
+def choose_tfs(var_names: pd.Index, tf_list_path: Path | None) -> list[str]:
+    if tf_list_path and tf_list_path.exists():
+        tf_list = {
+            line.strip().split("\t")[0]
+            for line in tf_list_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")
+        }
+        return [gene for gene in var_names if gene in tf_list]
     candidates = [
         gene
         for gene in var_names
         if gene.isupper() and len(gene) <= 10 and not gene.startswith(("MT-", "RPL", "RPS"))
     ]
-    return candidates[:100]
+    return candidates[:200]
 
 
 def expression_frame(adata: sc.AnnData) -> pd.DataFrame:
@@ -46,14 +54,19 @@ def expression_frame(adata: sc.AnnData) -> pd.DataFrame:
     return pd.DataFrame(matrix, index=adata.obs_names, columns=adata.var_names)
 
 
-def build_edges(frame: pd.DataFrame, tfs: list[str], min_abs_corr: float) -> pd.DataFrame:
+def build_edges(
+    frame: pd.DataFrame,
+    tfs: list[str],
+    min_abs_corr: float,
+    max_targets_per_tf: int,
+) -> pd.DataFrame:
     corr = frame.corr(method="spearman")
     rows = []
     for tf in tfs:
         if tf not in corr.index:
             continue
         ranked = corr.loc[tf].drop(labels=[tf], errors="ignore").abs().sort_values(ascending=False)
-        for target, score in ranked[ranked >= min_abs_corr].head(100).items():
+        for target, score in ranked[ranked >= min_abs_corr].head(max_targets_per_tf).items():
             rows.append({"tf": tf, "target": target, "score": float(score)})
     return pd.DataFrame(rows).drop_duplicates(["tf", "target"])
 
@@ -71,6 +84,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rna", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--min-abs-corr", type=float, default=0.3)
+    parser.add_argument("--max-targets-per-tf", type=int, default=100)
+    parser.add_argument("--tf-list", type=Path, default=DEFAULT_TF_LIST)
     return parser.parse_args()
 
 
@@ -79,9 +94,9 @@ def main() -> None:
     logger = setup_logging()
     adata = sc.read_h5ad(args.rna)
     frame = expression_frame(adata)
-    tfs = choose_tfs(frame.columns)
+    tfs = choose_tfs(frame.columns, args.tf_list)
     logger.info("Using %s candidate TFs", len(tfs))
-    edges = build_edges(frame, tfs, args.min_abs_corr)
+    edges = build_edges(frame, tfs, args.min_abs_corr, args.max_targets_per_tf)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     edges.to_csv(args.output_dir / "grn_edges.tsv", sep="\t", index=False)
     export_regulons(edges, args.output_dir)

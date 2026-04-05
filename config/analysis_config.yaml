@@ -85,7 +85,7 @@ analysis:
   spatial:
     top_regulons_for_mapping: 50
     neighborhood_rings: 2
-    moran_permutations: 0
+    moran_permutations: 999
   validation:
     minimum_signature_genes: 5
     tcga_split: median

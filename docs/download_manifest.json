@@ -3,42 +3,49 @@
     "name": "Ma2020_HCC_scRNA",
     "group": "scrna",
     "accession": "GSE149614",
+    "source": "geo",
     "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE149nnn/GSE149614/suppl/"
   },
   {
     "name": "Sun2021_HCC_scRNA",
     "group": "scrna",
     "accession": "GSE151530",
+    "source": "geo",
     "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE151nnn/GSE151530/suppl/"
   },
   {
     "name": "Ma2019_Early_HCC_scRNA",
     "group": "scrna",
     "accession": "GSE125449",
+    "source": "geo",
     "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE125nnn/GSE125449/suppl/"
   },
   {
     "name": "Zhang2021_HCC_TME_scRNA",
     "group": "scrna",
     "accession": "GSE156625",
+    "source": "geo",
     "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE156nnn/GSE156625/suppl/"
   },
   {
     "name": "Chen2022_HCC_Visium",
     "group": "spatial",
     "accession": "GSE203612",
+    "source": "geo",
     "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE203nnn/GSE203612/suppl/"
   },
   {
     "name": "Zhang2022_HCC_ATAC",
     "group": "atac",
     "accession": "GSE182613",
+    "source": "geo",
     "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE182nnn/GSE182613/suppl/"
   },
   {
     "name": "TCGA_LIHC",
     "group": "tcga",
     "accession": "TCGA-LIHC",
+    "source": "portal",
     "url": "https://portal.gdc.cancer.gov/projects/TCGA-LIHC"
   }
 ]

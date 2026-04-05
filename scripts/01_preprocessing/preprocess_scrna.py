@@ -76,7 +76,7 @@ def annotate_simple_celltypes(adata: ad.AnnData) -> None:
 
 
 def preprocess(datasets: Iterable[ad.AnnData], logger: logging.Logger) -> ad.AnnData:
-    merged = ad.concat([qc_filter(dataset) for dataset in datasets], join="outer", label="batch")
+    merged = ad.concat([qc_filter(dataset) for dataset in datasets], join="inner", label="batch")
     merged.var_names_make_unique()
     sc.pp.normalize_total(merged, target_sum=1e4)
     sc.pp.log1p(merged)

@@ -103,8 +103,8 @@ make all
 
 The repository now includes:
 
-- an expanded analysis prompt in `/home/runner/work/spatial_grn_atlas_hcc/spatial_grn_atlas_hcc/prompts/analysis_prompts.md`
-- a public dataset registry in `/home/runner/work/spatial_grn_atlas_hcc/spatial_grn_atlas_hcc/docs/public_data_registry.tsv`
+- an expanded analysis prompt in `prompts/analysis_prompts.md`
+- a public dataset registry in `docs/public_data_registry.tsv`
 - CLI entry points for data acquisition, preprocessing, GRN inference, spatial mapping, validation, and figure manifest generation
 
 These pieces are intended to support:
