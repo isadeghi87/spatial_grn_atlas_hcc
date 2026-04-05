@@ -1,53 +1,46 @@
-#!/bin/bash
-# Spatial GRN Atlas — Download HCC scRNA + spatial data
+#!/usr/bin/env bash
 set -euo pipefail
 
-DATA_DIR="$HOME/projects/spatial_grn_atlas_hcc/data"
-LOG="$DATA_DIR/download_log.txt"
-echo "$(date): Starting GRN Atlas downloads" > "$LOG"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+DATA_DIR="${PROJECT_ROOT}/data"
+LOG_DIR="${PROJECT_ROOT}/logs"
+mkdir -p "${LOG_DIR}"
+LOG_FILE="${LOG_DIR}/download_direct.log"
 
-geo_fetch() {
-    local geo_id="$1" study="$2" subdir="$3"
-    local out_dir="$DATA_DIR/$subdir/${geo_id}_${study}"
-    mkdir -p "$out_dir"
+DRY_RUN=0
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=1
+fi
 
-    if [ "$(find "$out_dir" -type f \( -name '*.gz' -o -name '*.h5' -o -name '*.tar' \) 2>/dev/null | wc -l)" -gt 0 ]; then
-        echo "  [SKIP] $geo_id ($study)" | tee -a "$LOG"; return
-    fi
-
-    echo "  [FETCH] $geo_id ($study)" | tee -a "$LOG"
-    local prefix="${geo_id:0:$((${#geo_id}-3))}nnn"
-    local base_url="https://ftp.ncbi.nlm.nih.gov/geo/series/${prefix}/${geo_id}/suppl"
-    local tmp_idx="/tmp/geo_idx_${geo_id}.html"
-    
-    wget -q --no-check-certificate "$base_url/" -O "$tmp_idx" 2>/dev/null || { echo "    [FAIL] Cannot access $geo_id" | tee -a "$LOG"; return; }
-    local files=$(grep -oP 'href="\K[^"]+' "$tmp_idx" | grep -v 'Parent\|geo/series\|hhs.gov' | grep -v '/$')
-    
-    for fname in $files; do
-        [ -f "$out_dir/$fname" ] && continue
-        echo "    [GET] $fname" | tee -a "$LOG"
-        wget -q --no-check-certificate -P "$out_dir" "${base_url}/${fname}" 2>&1 || true
-    done
-    rm -f "$tmp_idx"
-    echo "    [OK] $(find "$out_dir" -type f | wc -l) files" | tee -a "$LOG"
+run_cmd() {
+  echo "$(date -Iseconds) | $*" | tee -a "${LOG_FILE}"
+  if [[ "${DRY_RUN}" -eq 0 ]]; then
+    "$@"
+  fi
 }
 
-echo "================================================================="
-echo "Spatial GRN Atlas HCC — Data Download"
-echo "================================================================="
+fetch_geo() {
+  local accession="$1"
+  local group="$2"
+  local label="$3"
+  local prefix="${accession:0:${#accession}-3}nnn"
+  local url="https://ftp.ncbi.nlm.nih.gov/geo/series/${prefix}/${accession}/suppl/"
+  local out_dir="${DATA_DIR}/${group}/${accession}_${label}"
+  mkdir -p "${out_dir}"
+  run_cmd wget -r -np -nd -N -P "${out_dir}" -A "*.gz,*.tar,*.tar.gz,*.h5,*.h5ad,*.mtx,*.tsv,*.csv" "${url}"
+}
 
-# --- HCC scRNA-seq ---
-echo -e "\n=== HCC SCRNA ===" | tee -a "$LOG"
-geo_fetch "GSE149614" "Ma2020_HCC" "scrna"
-geo_fetch "GSE151530" "Sun2021_HCC" "scrna"
-geo_fetch "GSE125449" "Ma2019_HCC" "scrna"
+mkdir -p "${DATA_DIR}"/{scrna,spatial,atac,tcga,references}
 
-# --- HCC Spatial (Visium) ---
-echo -e "\n=== HCC SPATIAL ===" | tee -a "$LOG"
-geo_fetch "GSE203612" "Chen2022_HCC_Visium" "spatial"
+fetch_geo GSE149614 scrna Ma2020_HCC_scRNA
+fetch_geo GSE151530 scrna Sun2021_HCC_scRNA
+fetch_geo GSE125449 scrna Ma2019_Early_HCC_scRNA
+fetch_geo GSE156625 scrna Zhang2021_HCC_TME_scRNA
+fetch_geo GSE203612 spatial Chen2022_HCC_Visium
+fetch_geo GSE182613 atac Zhang2022_HCC_ATAC
 
-# --- Chromatin accessibility for GRN ---
-echo -e "\n=== ATAC-SEQ ===" | tee -a "$LOG"
-geo_fetch "GSE182613" "Zhang2022_HCC_ATAC" "atac"
+run_cmd wget -N -P "${DATA_DIR}/references" "https://jaspar.elixir.no/download/data/2024/CORE/JASPAR2024_CORE_vertebrates_non-redundant_pfms_jaspar.txt"
+run_cmd wget -N -P "${DATA_DIR}/references" "https://hocomoco11.autosome.org/final_bundle/hocomoco11/full/HUMAN/mono/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme"
 
-echo "$(date): GRN Atlas downloads complete" | tee -a "$LOG"
+echo "$(date -Iseconds) | TCGA-LIHC is available via GDC portal/API: https://portal.gdc.cancer.gov/projects/TCGA-LIHC" | tee -a "${LOG_FILE}"

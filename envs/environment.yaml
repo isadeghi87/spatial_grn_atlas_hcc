@@ -9,10 +9,14 @@ dependencies:
   - numpy
   - pandas
   - matplotlib
+  - seaborn
+  - pyyaml
+  - requests
   - pip
   - pip:
     - celloracle
     - pyscenic
     - squidpy
     - scvi-tools
-    - pyyaml
+    - scrublet
+    - lifelines

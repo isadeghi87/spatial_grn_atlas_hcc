@@ -1,0 +1,96 @@
+project:
+  name: spatial_grn_atlas_hcc
+  title: Spatial gene regulatory network atlas of hepatocellular carcinoma
+  target_journal: Nature Cancer
+  objective: Build a multi-cohort spatially resolved GRN atlas of HCC with orthogonal validation.
+
+paths:
+  data_root: data
+  raw_scrna: data/scrna
+  raw_spatial: data/spatial
+  raw_atac: data/atac
+  raw_tcga: data/tcga
+  references: data/references
+  processed: data/processed
+  outputs: out
+  figures: out/figures
+  grn: out/grn_networks
+  spatial: out/spatial_mapping
+  validation: out/validation
+
+datasets:
+  discovery_scrna:
+    - accession: GSE149614
+      label: Ma2020_HCC_scRNA
+      modality: scRNA-seq
+      use: tumor ecosystem discovery and cell-state annotation
+    - accession: GSE151530
+      label: Sun2021_HCC_scRNA
+      modality: scRNA-seq
+      use: cross-cohort validation of regulons
+    - accession: GSE125449
+      label: Ma2019_Early_HCC_scRNA
+      modality: scRNA-seq
+      use: early lesion trajectory validation
+    - accession: GSE156625
+      label: Zhang2021_HCC_TME_scRNA
+      modality: scRNA-seq
+      use: immune-state validation
+  spatial:
+    - accession: GSE203612
+      label: Chen2022_HCC_Visium
+      modality: Visium
+      use: spatial regulon mapping and niche definition
+  chromatin:
+    - accession: GSE182613
+      label: Zhang2022_HCC_ATAC
+      modality: ATAC-seq
+      use: motif and enhancer support for GRNs
+    - accession: TCGA-LIHC
+      label: TCGA_LIHC_bulk
+      modality: bulk RNA-seq and clinical
+      use: survival and clinical validation
+  references:
+    - accession: JASPAR2024
+      label: JASPAR 2024 CORE vertebrates
+    - accession: HOCOMOCOv11
+      label: HOCOMOCO human motifs
+    - accession: ENCODE
+      label: ENCODE TF ChIP-seq metadata
+    - accession: CistromeDB
+      label: Cistrome cancer TF binding metadata
+
+qc:
+  scrna:
+    min_genes: 200
+    max_genes: 6000
+    max_mito_pct: 25
+    min_cells_per_gene: 3
+    hvg: 3000
+  spatial:
+    min_counts: 1000
+    min_genes: 300
+    max_mito_pct: 30
+    n_top_spatial_genes: 200
+  atac:
+    min_fragments: 1000
+    min_tss_enrichment: 4.0
+
+analysis:
+  grn:
+    correlation_method: spearman
+    min_abs_correlation: 0.3
+    max_targets_per_tf: 100
+    min_cells_tf_detected_fraction: 0.05
+  spatial:
+    top_regulons_for_mapping: 50
+    neighborhood_rings: 2
+    moran_permutations: 0
+  validation:
+    minimum_signature_genes: 5
+    tcga_split: median
+
+figures:
+  dpi: 300
+  format: png
+  style: seaborn-v0_8-whitegrid
