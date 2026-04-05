@@ -146,7 +146,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     logger = setup_logging()
-    selected = list(iter_datasets(set(args.groups)))
+    groups = set(args.groups)
+    if not groups:
+        logger.info("No groups specified; selecting all dataset groups.")
+    selected = list(iter_datasets(groups))
     for dataset in selected:
         if dataset["source"] == "geo":
             download_geo_dataset(dataset, args.dry_run, args.overwrite, logger)

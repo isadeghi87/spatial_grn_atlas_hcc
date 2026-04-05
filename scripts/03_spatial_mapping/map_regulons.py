@@ -39,7 +39,8 @@ def score_regulons(adata: sc.AnnData, regulons: dict[str, list[str]]) -> pd.Data
         if not present:
             continue
         matrix = adata[:, present].X
-        scores[tf] = np.asarray(matrix.mean(axis=1)).ravel()
+        mean_axis = matrix.mean(axis=1)
+        scores[tf] = mean_axis.A1 if hasattr(mean_axis, "A1") else np.asarray(mean_axis).ravel()
     return pd.DataFrame(scores, index=adata.obs_names)
 
 

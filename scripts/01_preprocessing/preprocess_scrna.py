@@ -72,12 +72,20 @@ def annotate_simple_celltypes(adata: ad.AnnData) -> None:
             scores[label] = np.zeros(adata.n_obs)
     score_frame = np.column_stack([scores[label] for label in marker_map])
     labels = list(marker_map)
-    adata.obs["cell_type"] = [labels[idx] for idx in np.argmax(score_frame, axis=1)]
+    best_idx = np.argmax(score_frame, axis=1)
+    best_score = score_frame[np.arange(score_frame.shape[0]), best_idx]
+    adata.obs["cell_type"] = [
+        labels[idx] if score > 0 else "Unassigned" for idx, score in zip(best_idx, best_score, strict=False)
+    ]
+    adata.obs["cell_type_score"] = best_score
 
 
 def preprocess(datasets: Iterable[ad.AnnData], logger: logging.Logger) -> ad.AnnData:
-    merged = ad.concat([qc_filter(dataset) for dataset in datasets], join="inner", label="batch")
+    filtered = [qc_filter(dataset) for dataset in datasets]
+    union_gene_count = len(set().union(*(set(dataset.var_names) for dataset in filtered)))
+    merged = ad.concat(filtered, join="inner", label="batch")
     merged.var_names_make_unique()
+    logger.info("Retained %s shared genes from a union of %s genes", merged.n_vars, union_gene_count)
     sc.pp.normalize_total(merged, target_sum=1e4)
     sc.pp.log1p(merged)
     sc.pp.highly_variable_genes(merged, n_top_genes=3000, subset=True, flavor="seurat")

@@ -28,7 +28,7 @@ fetch_geo() {
   local url="https://ftp.ncbi.nlm.nih.gov/geo/series/${prefix}/${accession}/suppl/"
   local out_dir="${DATA_DIR}/${group}/${accession}_${label}"
   mkdir -p "${out_dir}"
-  run_cmd wget -r -np -nd -N -P "${out_dir}" -A "*.gz,*.tar,*.tar.gz,*.h5,*.h5ad,*.mtx,*.tsv,*.csv" "${url}"
+  run_cmd wget -r -l 1 -np -nd -N -P "${out_dir}" -A "*.gz,*.tar,*.tar.gz,*.h5,*.h5ad,*.mtx,*.tsv,*.csv" "${url}"
 }
 
 mkdir -p "${DATA_DIR}"/{scrna,spatial,atac,tcga,references}

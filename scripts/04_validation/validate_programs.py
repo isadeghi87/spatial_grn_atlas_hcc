@@ -33,10 +33,15 @@ def summarize_edges(edges: pd.DataFrame) -> pd.DataFrame:
     summary = (
         edges.groupby("tf")
         .agg(targets=("target", "nunique"), mean_score=("score", "mean"), max_score=("score", "max"))
-        .sort_values(["targets", "mean_score"], ascending=False)
+        .sort_values(["targets", "mean_score", "tf"], ascending=[False, False, True])
         .reset_index()
     )
-    summary["priority_rank"] = range(1, len(summary) + 1)
+    summary["priority_rank"] = (
+        summary[["targets", "mean_score", "max_score"]]
+        .apply(tuple, axis=1)
+        .rank(method="min", ascending=False)
+        .astype(int)
+    )
     return summary
 
 
