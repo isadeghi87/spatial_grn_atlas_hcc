@@ -82,13 +82,24 @@ analysis:
     min_abs_correlation: 0.3
     max_targets_per_tf: 100
     min_cells_tf_detected_fraction: 0.05
+    groupby: cell_type
+    cohort_column: cohort
+    minimum_group_cells: 50
   spatial:
     top_regulons_for_mapping: 50
     neighborhood_rings: 2
+    moran_neighbors: 6
+    # Keep 999 for publication-grade runs; reduce for faster exploratory passes on large spatial datasets.
     moran_permutations: 999
+    niche_markers:
+      malignant: [EPCAM, KRT8, KRT18, AFP]
+      immune: [PTPRC, CD3D, MS4A1, LYZ]
+      stromal: [COL1A1, COL3A1, DCN, ACTA2]
+      vascular: [KDR, PECAM1, VWF, EMCN]
   validation:
     minimum_signature_genes: 5
     tcga_split: median
+    dominant_fraction_threshold: 0.4
 
 figures:
   dpi: 300

@@ -23,6 +23,7 @@ Build a hepatocellular carcinoma atlas that resolves transcription factor progra
 3. Build regulons for each TF and rank them by effect size, specificity, and support.
 4. Derive consensus hub TFs per compartment and across cohorts.
 5. Flag candidate oncogenic, immune-evasive, and stromal-remodeling regulators.
+6. Export a machine-readable ranking table that records TF effect size, dominant compartment, and cohort support.
 
 ## Prompt 3: Spatial regulon mapping
 1. Score regulon activity per Visium spot using AUCell when available, otherwise robust mean-expression scoring.
@@ -30,6 +31,7 @@ Build a hepatocellular carcinoma atlas that resolves transcription factor progra
 3. Define regulatory domains and align them with histology-informed tumor core, invasive margin, immune stroma, and vascular niches.
 4. Link niche-level regulon activity to inferred cell composition and ligand-receptor context.
 5. Generate publication-grade spatial overlays for prioritized TF programs.
+6. Save spot-level niche calls and ranked spatial-statistics tables for downstream validation.
 
 ## Prompt 4: Advanced validations expected at journal level
 1. Cross-cohort validation: confirm hub TFs and regulon target overlap in at least one independent single-cell cohort.
@@ -38,6 +40,7 @@ Build a hepatocellular carcinoma atlas that resolves transcription factor progra
 4. Specificity validation: compare malignant-specific regulons against immune and stromal compartments.
 5. Spatial validation: confirm niche restriction of the same regulon across multiple sections or samples when available.
 6. Literature validation: annotate whether top TFs are known in HCC biology or represent novel candidates.
+7. Merge GRN rank, compartment specificity, cohort support, and spatial restriction into one validation-ready summary.
 
 ## Prompt 5: Nature Cancer-style deliverables
 1. Figure 1: cohort integration, cell atlas, and lineage overview.
@@ -47,3 +50,8 @@ Build a hepatocellular carcinoma atlas that resolves transcription factor progra
 5. Figure 5: TCGA and orthogonal validation of prioritized TF programs.
 6. Figure 6: therapeutic prioritization and a model linking TF programs to HCC ecosystem states.
 7. Extended data: QC, sensitivity analyses, cohort replication, and alternate thresholds.
+
+## Prompt 6: Config-driven execution checklist
+1. Record all thresholds used for GRN, spatial, and validation analyses from `config/analysis_config.yaml`.
+2. Confirm that every advanced table can be traced back to a CLI output path under `out/`.
+3. Preserve compatibility with the baseline workflow so `make all` still produces the core deliverables.
