@@ -11,6 +11,7 @@
 - Niche-specific TF program discovery (tumor core, margin, stroma, perivascular)
 - Immunotype-specific regulatory switch identification
 - Therapeutic TF target prioritization with druggability scoring
+- Config-driven compartment-aware GRN summaries, spatial autocorrelation metrics, and niche calls
 
 **Target Journal:** Nature Cancer
 
@@ -41,7 +42,8 @@ spatial_grn_atlas_hcc/
 │   ├── 02_grn_inference/
 │   ├── 03_spatial_mapping/
 │   ├── 04_validation/
-│   └── 05_figures/
+│   ├── 05_figures/
+│   └── shared_analysis.py            # Shared config and scoring helpers
 ├── .gitignore
 ├── LICENSE
 ├── Makefile
@@ -95,9 +97,26 @@ conda activate spatial_grn_atlas_hcc
 python3 scripts/00_data_acquisition/download_datasets.py --dry-run
 python3 scripts/00_data_acquisition/download_references.py --dry-run
 
-# 2. Run the workflow
+# 2. Review configurable analysis thresholds
+cat config/analysis_config.yaml
+
+# 3. Run the workflow
 make all
 ```
+
+## Advanced analysis outputs
+
+The workflow now produces additional advanced-analysis tables beyond the baseline GRN edge list:
+
+- `out/grn_networks/tf_priority_summary.tsv`: global TF ranking across the merged atlas
+- `out/grn_networks/advanced_tf_support.tsv`: merged view of TF strength, compartment support, and cohort support
+- `out/grn_networks/cell_type_grn_edges.tsv`: compartment-aware GRN edges using the `cell_type` labels
+- `out/grn_networks/cohort_grn_edges.tsv`: cohort-aware GRN edges using the `cohort` labels
+- `out/spatial_mapping/regulon_spatial_stats.tsv`: Moran's I and spot-level variance for prioritized regulons
+- `out/spatial_mapping/niche_calls.tsv`: heuristic tumor-core, invasive-margin, immune-stroma, and vascular niche assignments
+- `out/validation/advanced_validation_summary.tsv`: integrated validation table spanning GRN rank, compartment specificity, cohort support, and spatial restriction
+
+These outputs are parameterized by `/home/runner/work/spatial_grn_atlas_hcc/spatial_grn_atlas_hcc/config/analysis_config.yaml`.
 
 ## Nature Cancer-level analysis scope
 
@@ -106,14 +125,15 @@ The repository now includes:
 - an expanded analysis prompt in `prompts/analysis_prompts.md`
 - a public dataset registry in `docs/public_data_registry.tsv`
 - CLI entry points for data acquisition, preprocessing, GRN inference, spatial mapping, validation, and figure manifest generation
+- config-aware advanced summaries for compartment-specific GRNs, cohort support, spatial structure, and niche calls
 
 These pieces are intended to support:
 
 1. multi-cohort single-cell integration
-2. consensus GRN construction
-3. spatial regulon mapping
-4. orthogonal public-data validation
-5. publication figure planning
+2. consensus GRN construction with compartment and cohort support
+3. spatial regulon mapping with Moran's I ranking and heuristic niche annotation
+4. orthogonal public-data validation summaries
+5. publication figure planning with panel-level source tracking
 
 ## Contributing
 
