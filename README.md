@@ -116,7 +116,7 @@ The workflow now produces additional advanced-analysis tables beyond the baselin
 - `out/spatial_mapping/niche_calls.tsv`: heuristic tumor-core, invasive-margin, immune-stroma, and vascular niche assignments
 - `out/validation/advanced_validation_summary.tsv`: integrated validation table spanning GRN rank, compartment specificity, cohort support, and spatial restriction
 
-These outputs are parameterized by `/home/runner/work/spatial_grn_atlas_hcc/spatial_grn_atlas_hcc/config/analysis_config.yaml`.
+These outputs are parameterized by `config/analysis_config.yaml`.
 
 ## Nature Cancer-level analysis scope
 

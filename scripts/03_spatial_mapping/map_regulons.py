@@ -15,6 +15,12 @@ import scanpy as sc
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_DIR = PROJECT_ROOT / "logs"
+DEFAULT_NICHE_MARKERS = {
+    "malignant": ["EPCAM", "KRT8", "KRT18", "AFP"],
+    "immune": ["PTPRC", "CD3D", "MS4A1", "LYZ"],
+    "stromal": ["COL1A1", "COL3A1", "DCN", "ACTA2"],
+    "vascular": ["KDR", "PECAM1", "VWF", "EMCN"],
+}
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
@@ -89,7 +95,7 @@ def build_knn_weights(coords: np.ndarray, neighbors: int) -> np.ndarray:
     nearest = np.argpartition(distances, kth=k - 1, axis=1)[:, :k]
     weights = np.zeros((len(coords), len(coords)), dtype=float)
     row_index = np.arange(len(coords))[:, None]
-    # Populate an undirected k-nearest-neighbor adjacency matrix for Moran's I scoring.
+    # Symmetrize the k-nearest-neighbor graph so Moran's I uses reciprocal local neighborhoods.
     weights[row_index, nearest] = 1.0
     return np.maximum(weights, weights.T)
 
@@ -141,10 +147,10 @@ def assign_niches(
     center = coords.mean(axis=0)
     radial_distance = np.sqrt(np.square(coords - center).sum(axis=1))
     radial_rank = pd.Series(radial_distance, index=adata.obs_names).rank(pct=True, method="average")
-    malignant_score = mean_expression(adata, marker_map.get("malignant", ["EPCAM", "KRT8", "KRT18", "AFP"]))
-    immune_score = mean_expression(adata, marker_map.get("immune", ["PTPRC", "CD3D", "MS4A1", "LYZ"]))
-    stromal_score = mean_expression(adata, marker_map.get("stromal", ["COL1A1", "COL3A1", "DCN", "ACTA2"]))
-    vascular_score = mean_expression(adata, marker_map.get("vascular", ["KDR", "PECAM1", "VWF", "EMCN"]))
+    malignant_score = mean_expression(adata, marker_map.get("malignant", DEFAULT_NICHE_MARKERS["malignant"]))
+    immune_score = mean_expression(adata, marker_map.get("immune", DEFAULT_NICHE_MARKERS["immune"]))
+    stromal_score = mean_expression(adata, marker_map.get("stromal", DEFAULT_NICHE_MARKERS["stromal"]))
+    vascular_score = mean_expression(adata, marker_map.get("vascular", DEFAULT_NICHE_MARKERS["vascular"]))
     dominant_regulon = scores.idxmax(axis=1) if not scores.empty else pd.Series("NA", index=adata.obs_names)
     dominant_activity = scores.max(axis=1) if not scores.empty else pd.Series(0.0, index=adata.obs_names)
 

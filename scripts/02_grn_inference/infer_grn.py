@@ -73,9 +73,9 @@ def build_edges(
         ranked = corr.loc[tf].abs().drop(labels=[tf], errors="ignore").sort_values(ascending=False)
         for target, score in ranked[ranked >= min_abs_corr].head(max_targets_per_tf).items():
             rows.append({"tf": tf, "target": target, "score": float(score)})
-    edge_frame = pd.DataFrame(rows, columns=["tf", "target", "score"])
+    edge_frame = pd.DataFrame(rows)
     if edge_frame.empty:
-        return edge_frame
+        return pd.DataFrame(columns=["tf", "target", "score"])
     return edge_frame.drop_duplicates(["tf", "target"])
 
 
