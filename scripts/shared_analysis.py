@@ -47,7 +47,8 @@ def mean_expression(adata: Any, genes: list[str]) -> np.ndarray:
 
 def standardize(values: np.ndarray) -> np.ndarray:
     array = np.asarray(values, dtype=float)
-    scale = float(array.std())
+    mean = float(array.mean())
+    scale = float(array.std(ddof=0))
     if scale == 0:
         return np.zeros_like(array)
-    return (array - float(array.mean())) / scale
+    return (array - mean) / scale

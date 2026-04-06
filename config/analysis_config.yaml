@@ -89,6 +89,7 @@ analysis:
     top_regulons_for_mapping: 50
     neighborhood_rings: 2
     moran_neighbors: 6
+    # Reduce permutations for faster exploratory runs on large spatial datasets.
     moran_permutations: 999
     niche_markers:
       malignant: [EPCAM, KRT8, KRT18, AFP]

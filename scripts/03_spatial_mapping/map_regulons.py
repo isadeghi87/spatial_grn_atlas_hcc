@@ -89,6 +89,7 @@ def build_knn_weights(coords: np.ndarray, neighbors: int) -> np.ndarray:
     nearest = np.argpartition(distances, kth=k - 1, axis=1)[:, :k]
     weights = np.zeros((len(coords), len(coords)), dtype=float)
     row_index = np.arange(len(coords))[:, None]
+    # Populate an undirected k-nearest-neighbor adjacency matrix for Moran's I scoring.
     weights[row_index, nearest] = 1.0
     return np.maximum(weights, weights.T)
 
@@ -156,7 +157,7 @@ def assign_niches(
             "tumor_core": malignant_score[idx] - radial_rank.loc[obs_name],
             "invasive_margin": malignant_score[idx] + radial_rank.loc[obs_name],
         }
-        niche_labels.append(max(compartment_scores, key=compartment_scores.get))
+        niche_labels.append(max(compartment_scores, key=lambda label: compartment_scores[label]))
 
     domain = (
         adata.obs["domain"].astype(str)
