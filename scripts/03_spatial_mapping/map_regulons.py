@@ -161,6 +161,7 @@ def assign_niches(
             "vascular_niche": vascular_score[idx],
             "immune_stroma": immune_score[idx] + stromal_score[idx],
             # Core-like spots should be central, while margin-like spots should be peripheral among malignant regions.
+            # This is a geometry-based fallback heuristic and should be reviewed against histology for irregular tumors.
             "tumor_core": malignant_score[idx] - radial_rank.loc[obs_name],
             "invasive_margin": malignant_score[idx] + radial_rank.loc[obs_name],
         }
@@ -204,7 +205,7 @@ def main() -> None:
     config = load_analysis_config(args.config)
     top_n = int(get_config_value(config, "analysis", "spatial", "top_regulons_for_mapping", default=50))
     neighbors = int(get_config_value(config, "analysis", "spatial", "moran_neighbors", default=6))
-    permutations = int(get_config_value(config, "analysis", "spatial", "moran_permutations", default=99))
+    permutations = int(get_config_value(config, "analysis", "spatial", "moran_permutations", default=999))
     marker_map = get_config_value(config, "analysis", "spatial", "niche_markers", default={})
     if args.top_n is not None:
         top_n = args.top_n

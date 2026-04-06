@@ -8,6 +8,7 @@ import logging
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -54,7 +55,7 @@ def summarize_edges(edges: pd.DataFrame) -> pd.DataFrame:
 
 
 def safe_fraction(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
-    safe_denominator = denominator.where(denominator != 0, 1)
+    safe_denominator = denominator.where(denominator != 0, np.nan)
     return numerator / safe_denominator
 
 
