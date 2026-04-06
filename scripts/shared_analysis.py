@@ -48,7 +48,8 @@ def mean_expression(adata: Any, genes: list[str]) -> np.ndarray:
 def standardize(values: np.ndarray) -> np.ndarray:
     array = np.asarray(values, dtype=float)
     mean = float(array.mean())
-    # Use population-scale normalization because these vectors represent the full scored observations in a run.
+    # Use population-scale normalization because these vectors represent the full scored observations in one run;
+    # sample normalization would overcorrect by treating the complete set of spots or cells as a sampled subset.
     scale = float(array.std(ddof=0))
     if scale == 0:
         return np.zeros_like(array)

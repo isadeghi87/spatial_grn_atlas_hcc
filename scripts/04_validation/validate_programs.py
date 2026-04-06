@@ -53,6 +53,11 @@ def summarize_edges(edges: pd.DataFrame) -> pd.DataFrame:
     return summary
 
 
+def safe_fraction(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
+    safe_denominator = denominator.where(denominator != 0, 1)
+    return numerator / safe_denominator
+
+
 def summarize_label_specificity(edges: pd.DataFrame, label_column: str) -> pd.DataFrame:
     if edges.empty or label_column not in edges.columns:
         return pd.DataFrame(columns=["tf", f"{label_column}_support", f"dominant_{label_column}", f"{label_column}_specificity"])
@@ -69,8 +74,8 @@ def summarize_label_specificity(edges: pd.DataFrame, label_column: str) -> pd.Da
     )
     total_support = grouped.groupby("tf")["weighted_support"].sum().rename("total_weighted_support")
     dominant = dominant.merge(total_support, on="tf", how="left")
-    dominant[f"{label_column}_specificity"] = dominant["weighted_support"] / dominant["total_weighted_support"].where(
-        dominant["total_weighted_support"] != 0, 1
+    dominant[f"{label_column}_specificity"] = safe_fraction(
+        dominant["weighted_support"], dominant["total_weighted_support"]
     )
     return dominant.rename(
         columns={
@@ -98,9 +103,7 @@ def summarize_spatial_support(spatial_stats: pd.DataFrame, niche_calls: pd.DataF
     dominant_niche = niche_counts.groupby("dominant_regulon", as_index=False).first()
     total_spots = niche_counts.groupby("dominant_regulon")["spots"].sum().rename("total_spots")
     dominant_niche = dominant_niche.merge(total_spots, on="dominant_regulon", how="left")
-    dominant_niche["dominant_niche_fraction"] = dominant_niche["spots"] / dominant_niche["total_spots"].where(
-        dominant_niche["total_spots"] != 0, 1
-    )
+    dominant_niche["dominant_niche_fraction"] = safe_fraction(dominant_niche["spots"], dominant_niche["total_spots"])
     dominant_niche = dominant_niche.rename(
         columns={
             "dominant_regulon": "tf",

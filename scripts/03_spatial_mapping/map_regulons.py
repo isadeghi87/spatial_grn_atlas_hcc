@@ -95,7 +95,7 @@ def build_knn_weights(coords: np.ndarray, neighbors: int) -> np.ndarray:
     nearest = np.argpartition(distances, kth=k - 1, axis=1)[:, :k]
     weights = np.zeros((len(coords), len(coords)), dtype=float)
     row_index = np.arange(len(coords))[:, None]
-    # Symmetrize the k-nearest-neighbor graph so Moran's I uses reciprocal local neighborhoods.
+    # Take the union of each spot's nearest neighbors to produce a symmetric spatial graph for Moran's I.
     weights[row_index, nearest] = 1.0
     return np.maximum(weights, weights.T)
 
@@ -160,6 +160,7 @@ def assign_niches(
         compartment_scores = {
             "vascular_niche": vascular_score[idx],
             "immune_stroma": immune_score[idx] + stromal_score[idx],
+            # Core-like spots should be central, while margin-like spots should be peripheral among malignant regions.
             "tumor_core": malignant_score[idx] - radial_rank.loc[obs_name],
             "invasive_margin": malignant_score[idx] + radial_rank.loc[obs_name],
         }

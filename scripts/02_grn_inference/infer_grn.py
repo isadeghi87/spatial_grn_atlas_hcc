@@ -194,7 +194,8 @@ def build_advanced_summary(
     for column in fill_columns:
         summary[column] = summary[column].fillna(0)
 
-    # Favor TFs with stronger edges, broader target programs, and support across discovered cell groups.
+    # Favor TFs with stronger edges, broader target programs, and support across discovered cell groups by
+    # multiplying mean edge strength, a damped target-count term, and the number of supported groups.
     summary["priority_score"] = (
         summary["mean_score"] * np.log1p(summary["targets"]) * (1 + summary.get(f"{group_column}_support", 0))
     )
